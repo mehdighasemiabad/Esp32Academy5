@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Esp32Academy"
 include(":app")
+
