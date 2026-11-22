@@ -2,11 +2,10 @@ package ir.esp32academy
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -36,7 +35,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) { 
         super.onCreate(savedInstanceState)
         setContent { 
-            // اعمال سراسری راست‌چین بودن برنامه (RTL)
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 AcademyApp() 
             }
@@ -63,7 +61,7 @@ void loop() {
   digitalWrite(LED_PIN, LOW);
   delay(500);
 }""", 
-        "در تابع setup پایه به‌عنوان خروجی (OUTPUT) تنظیم می‌شود. تابع loop پیوسته وضعیت پایه را هر نیم‌ثانیه تغییر می‌دهد. در بعضی بردها LED داخلی روی GPIO 2 نیست؛ مشخصات برد را بررسی کنید."
+        "در تابع setup پایه به‌عنوان خروجی (OUTPUT) تنظیم می‌شود. تابع loop پیوسته وضعیت پایه را هر نیم‌ثانیه تغییر می‌دهد."
     ),
     Lesson(
         "خواندن کلید (Button)", 
@@ -84,7 +82,7 @@ void loop() {
   }
   delay(200);
 }""", 
-        "Serial Monitor را روی 115200 baud باز کنید. چون ورودی pull-up است، LOW به معنی فشرده‌شدن کلید است. برای حذف پرش مکانیکی (Bounce) می‌توان debounce اضافه کرد."
+        "Serial Monitor را روی 115200 baud باز کنید. چون ورودی pull-up است، LOW به معنی فشرده‌شدن کلید است."
     ),
     Lesson(
         "خواندن سنسور آنالوگ (ADC)", 
@@ -102,7 +100,7 @@ void loop() {
   Serial.println(value);
   delay(500);
 }""", 
-        "در ESP32 مقدار ADC معمولاً در بازه ۰ تا ۴۰۹۵ گزارش می‌شود، اما دقت و بازه ولتاژ به مدل و تنظیمات ADC وابسته است. GPIO 34 فقط ورودی است و مقاومت داخلی pull-up ندارد."
+        "در ESP32 مقدار ADC معمولاً در بازه ۰ تا ۴۰۹۵ گزارش می‌شود. GPIO 34 فقط ورودی است و مقاومت داخلی pull-up ندارد."
     ),
     Lesson(
         "اتصال به Wi-Fi", 
@@ -165,7 +163,7 @@ void setup() {
 void loop() {
   server.handleClient();
 }""", 
-        "پس از جایگزینی اطلاعات Wi-Fi، IP چاپ‌شده را در مرورگر دستگاهی در همان شبکه باز کنید. مسیرهای /on و /off وضعیت LED را عوض می‌کنند؛ handleClient درخواست‌ها را پردازش می‌کند."
+        "پس از جایگزینی اطلاعات Wi-Fi، IP چاپ‌شده را در مرورگر دستگاهی در همان شبکه باز کنید. مسیرهای /on و /off وضعیت LED را عوض می‌کنند."
     ),
 )
 
@@ -175,7 +173,15 @@ fun AcademyApp() {
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route ?: "home"
     
-    // رنگ‌بندی و تنظیمات Material Design
+    // مدیریت دکمه بازگشت گوشی
+    BackHandler(enabled = route != "home" && route != "splash") {
+        if (route.startsWith("lesson/")) {
+            nav.navigate("examples") { popUpTo("home") { saveState = true } }
+        } else {
+            nav.navigate("home") { popUpTo("home") { inclusive = true } }
+        }
+    }
+
     MaterialTheme(colorScheme = darkColorScheme(background=Bg, surface=Surface, primary=Mint, onBackground=TextMain, onSurface=TextMain)) {
         Scaffold(containerColor=Bg, bottomBar={ 
             NavigationBar(containerColor=Surface) {
@@ -226,8 +232,7 @@ fun AcademyApp() {
                     InfoScreen("Wi-Fi و Bluetooth", listOf(
                         "بسیاری از بردهای ESP32 از Wi-Fi باند ۲.۴ گیگاهرتز پشتیبانی می‌کنند؛ مشخصات مدل دقیق خود را بررسی کنید.",
                         "کاربردها: اتصال به شبکه محلی، وب‌سرور داخلی (مانند کنترل LED)، ارسال داده حسگر به سرور و کنترل از راه دور.",
-                        "Bluetooth Classic و BLE در مدل‌های مختلف پشتیبانی متفاوتی دارند. برای مصرف کم انرژی و حسگرهای پوشیدنی معمولاً BLE مناسب است.",
-                        "اطلاعات ورود شبکه را در کد عمومی یا مخزن منتشر نکنید؛ گذرواژه نمونه در این برنامه صرفاً جایگزین متنی است."
+                        "Bluetooth Classic و BLE در مدل‌های مختلف پشتیبانی متفاوتی دارند. برای مصرف کم انرژی و حسگرهای پوشیدنی معمولاً BLE مناسب است."
                     )) 
                 }
                 composable("iot") { 
@@ -235,20 +240,19 @@ fun AcademyApp() {
                         "پایش دما و رطوبت: خواندن حسگر DHT11/DHT22 و نمایش داده در داشبورد محلی یا ابری.",
                         "خانه هوشمند: کنترل لامپ یا بار کم‌ولتاژ از طریق وب‌سرور یا اپلیکیشن (برای برق شهر حتماً از رله ایزوله و نظارت متخصص استفاده کنید).",
                         "ایستگاه محیطی: اندازه‌گیری نور، دما یا کیفیت هوا و ثبت روندها در حافظه.",
-                        "رباتیک: کنترل موتورها و سرووها از طریق Wi-Fi یا Bluetooth.",
-                        "در هر پروژه هدف یادگیری، نمودار اتصال، فهرست قطعات، روش آزمون و ملاحظات ایمنی را ثبت کنید."
+                        "رباتیک: کنترل موتورها و سرووها از طریق Wi-Fi یا Bluetooth."
                     )) 
                 }
                 composable("competition") { 
                     InfoScreen("راهنمای مسابقه آفرینش هوشمند", listOf(
-                        "این نرم‌افزار در قالب یک اپلیکیشن آموزشی تعاملی برای آموزش میکروکنترلر ESP32 و اینترنت اشیاء قرار می‌گیرد؛ این موضوع در محورهای پیشنهادی شیوه‌نامه، از جمله آموزش بردهای توسعه و طراحی ابزار آموزشی تعاملی، آمده است.",
-                        "برای اثر آموزشی، هدف یادگیری روشن تعریف کنید؛ محتوا باید علمی، متناسب با سطح هنرستان و قابل استفاده در تدریس یا کارگاه باشد.",
-                        "شیوه‌نامه استفاده از ابزارهای هوش مصنوعی در فرایند تولید را الزامی دانسته و شرح ابزارها و میزان استفاده را در مستندات لازم می‌داند. محتوای تولیدشده باید بازبینی و تأیید علمی شود.",
-                        "این راهنما جایگزین نسخه رسمی شیوه‌نامه نیست. ضوابط، مهلت‌ها و مدارک ارسال را در متن رسمی آخرین دوره بررسی کنید."
+                        "این نرم‌افزار در قالب یک اپلیکیشن آموزشی تعاملی برای آموزش میکروکنترلر ESP32 و اینترنت اشیاء قرار می‌گیرد.",
+                        "این اثر در گرایش دوم (طراحی و تولید نرم‌افزارها و سامانه‌های آموزشی هوشمند و تعاملی) و در محور آموزش میکروکنترلرها شرکت کرده است.",
+                        "برای اثر آموزشی، هدف یادگیری روشن تعریف شده؛ محتوا علمی، متناسب با سطح هنرستان و قابل استفاده در تدریس یا کارگاه است.",
+                        "شیوه‌نامه استفاده از ابزارهای هوش مصنوعی در فرایند تولید را الزامی دانسته و شرح ابزارها و میزان استفاده در مستندات ارائه شده است."
                     )) 
                 }
                 composable("about") { 
-                    InfoScreen("درباره آکادمی", listOf(
+                    InfoScreen("درباره آکادمی و پدیدآورنده", listOf(
                         "پدیدآورنده و نویسنده: دکتر مهدی قاسمی",
                         "هنرستان فنی طالقانی شازند - استان مرکزی",
                         "این برنامه یک راهنمای آفلاین فارسی برای آشنایی با ESP32 و تمرین مثال‌های پایه است.",
@@ -271,9 +275,16 @@ private fun SplashScreen(continueApp:()->Unit){
         Spacer(Modifier.height(16.dp))
         Text("ESP32", fontSize=46.sp, fontWeight=FontWeight.Bold, color=Mint)
         Text("آکادمی ESP32", fontSize=28.sp, fontWeight=FontWeight.Bold, color=TextMain, textAlign=TextAlign.Center)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+        
         Panel { 
-            Text("آموزش تعاملی میکروکنترلر و اینترنت اشیاء", color=Mint, fontWeight=FontWeight.Bold, textAlign=TextAlign.Right, modifier=Modifier.fillMaxWidth())
+            Text("مسابقه کشوری آفرینش هوشمند", color=Mint, fontWeight=FontWeight.Bold, textAlign=TextAlign.Center, modifier=Modifier.fillMaxWidth())
+            Body("گرایش دوم: طراحی و تولید نرم‌افزارها و سامانه‌های آموزشی هوشمند و تعاملی")
+            Body("محور: آموزش میکروکنترلرها و کاربردهای اینترنت اشیا (IoT)")
+        }
+        
+        Spacer(Modifier.height(16.dp))
+        Panel { 
             Body("پدیدآورنده: دکتر مهدی قاسمی")
             Body("هنرستان فنی طالقانی شازند - استان مرکزی") 
         }
@@ -311,7 +322,6 @@ private fun Panel(content:@Composable ColumnScope.()->Unit){
     ) 
 }
 
-// این تابع تضمین می‌کند که همه متن‌ها از سمت راست شروع شوند
 @Composable 
 private fun Body(text:String){ 
     Text(
@@ -319,7 +329,7 @@ private fun Body(text:String){
         color = TextMain, 
         fontSize = 16.sp, 
         lineHeight = 26.sp, 
-        textAlign = TextAlign.Right, // راست‌چین کردن متن
+        textAlign = TextAlign.Right,
         modifier = Modifier.fillMaxWidth()
     ) 
 }
@@ -351,7 +361,7 @@ private fun HomeScreen(open:(String)->Unit){
                 Row(Modifier.padding(16.dp), verticalAlignment=Alignment.CenterVertically, horizontalArrangement=Arrangement.spacedBy(12.dp)){
                     Icon(icon, null, tint=Mint)
                     Text(title, color=TextMain, fontSize=17.sp, fontWeight=FontWeight.Medium, textAlign=TextAlign.Right, modifier=Modifier.weight(1f))
-                    Icon(Icons.Filled.ChevronLeft, null, tint=Muted) // در حالت RTL این آیکون به درستی به سمت چپ اشاره می‌کند
+                    Icon(Icons.Filled.ChevronLeft, null, tint=Muted)
                 } 
             } 
         }
@@ -396,7 +406,6 @@ private fun PinsScreen() {
         Panel {
             Text("نمودار شماتیک پایه‌ها", color=Mint, fontWeight=FontWeight.Bold, textAlign=TextAlign.Right, modifier=Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
-            // کدهای متنی و نمودارها همیشه باید چپ‌چین (LTR) بمانند تا ساختارشان حفظ شود
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Text(
                     text = """
@@ -508,7 +517,6 @@ private fun LessonScreen(lesson:Lesson){
         Panel {
             Text("کد Arduino C++", color=Mint, fontWeight=FontWeight.Bold, fontSize=18.sp, textAlign=TextAlign.Right, modifier=Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
-            // کدها ذاتاً انگلیسی هستند و باید چپ‌چین نمایش داده شوند
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 SelectionContainer { 
                     Text(
@@ -523,7 +531,7 @@ private fun LessonScreen(lesson:Lesson){
                         fontSize=13.sp,
                         lineHeight=19.sp,
                         fontFamily = FontFamily.Monospace,
-                        textAlign = TextAlign.Left // کدها باید چپ‌چین باشند
+                        textAlign = TextAlign.Left
                     ) 
                 }
             }
